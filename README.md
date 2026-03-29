@@ -1,2 +1,2 @@
-# MessageBox-
+# MessageBox
 Мессенджер на Java на сокетах
