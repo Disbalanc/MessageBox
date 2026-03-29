@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessageBox</title>
+    <style>
+        /* ═══════ СБРОС И ПЕРЕМЕННЫЕ ═══════ */
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        :root {
+            --bg:          #0e1621;
+            --sidebar:     #17212b;
+            --header:      #1c2937;
+            --input-bg:    #242f3d;
+            --bubble-my:   #2b5278;
+            --bubble-other:#182533;
+            --text:        #f5f5f5;
+            --muted:       #708499;
+            --accent:      #5288c1;
+            --green:       #4dcd6b;
+            --red:         #e05d5d;
+            --pm-bg:       #2a1f3d;
+            --pm-border:   #6b3fa0;
+            --hover:       #1e2c3a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ═══════ ЭКРАН ВХОДА ═══════ */
+        #login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #0e1621 0%, #1a2a3a 100%);
+        }
+
+        .login-card {
+            background: var(--sidebar);
+            border-radius: 16px;
+            padding: 40px;
+            width: 400px;
+            max-width: 90vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            text-align: center;
+        }
+
+        .login-logo { font-size: 64px; margin-bottom: 10px; }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .login-subtitle {
+            color: var(--muted);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            background: var(--input-bg);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .login-input:focus { border-color: var(--accent); }
+
+        .login-input::placeholder { color: var(--muted); }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin-top: 8px;
+        }
+
+        .login-btn:hover { background: #6a9fd8; }
+        .login-btn:active { transform: scale(0.98); }
+        .login-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+        .login-error {
+            color: var(--red);
+            font-size: 13px;
+            min-height: 20px;
+            margin-top: 10px;
+        }
+
+        .login-version {
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 20px;
+        }
+
+        /* ═══════ ЭКРАН ЧАТА ═══════ */
+        #chat-screen {
+            display: none;
+            height: 100vh;
+        }
+
+        .chat-layout {
+            display: flex;
+            height: 100%;
+        }
+
+        /* ── Боковая панель ── */
+        .sidebar {
+            width: 280px;
+            min-width: 280px;
+            background: var(--sidebar);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .sidebar-header {
+            padding: 16px 20px;
+            background: var(--header);
+            font-size: 17px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 56px;
+        }
+
+        .online-bar {
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--muted);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .online-dot {
+            width: 8px; height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+        }
+
+        .user-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .user-item:hover { background: var(--hover); }
+        .user-item.me { cursor: default; }
+        .user-item.me:hover { background: transparent; }
+
+        .user-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .user-name { font-size: 14px; }
+        .user-name-me { color: var(--accent); font-weight: 600; }
+
+        .my-profile {
+            padding: 14px 20px;
+            background: var(--header);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .my-profile-info { flex: 1; }
+        .my-profile-name { font-size: 14px; font-weight: 600; }
+        .my-profile-status { font-size: 11px; color: var(--green); }
+
+        .exit-btn {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+
+        .exit-btn:hover { color: var(--red); background: rgba(224,93,93,0.1); }
+
+        /* ── Основная область ── */
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .chat-header {
+            padding: 12px 24px;
+            background: var(--header);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-height: 56px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .chat-header-title { font-size: 16px; font-weight: 600; }
+
+        .chat-header-status {
+            font-size: 12px;
+            color: var(--green);
+        }
+
+        /* ── Сообщения ── */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            scroll-behavior: smooth;
+        }
+
+        .messages-area::-webkit-scrollbar { width: 6px; }
+        .messages-area::-webkit-scrollbar-track { background: transparent; }
+        .messages-area::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.15);
+            border-radius: 3px;
+        }
+
+        .msg-row {
+            display: flex;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-row.mine    { justify-content: flex-end; }
+        .msg-row.theirs  { justify-content: flex-start; }
+        .msg-row.system  { justify-content: center; }
+
+        .msg-bubble {
+            max-width: 480px;
+            padding: 8px 14px 6px;
+            border-radius: 12px 12px 12px 4px;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .msg-row.mine .msg-bubble {
+            background: var(--bubble-my);
+            border-radius: 12px 12px 4px 12px;
+        }
+
+        .msg-row.theirs .msg-bubble {
+            background: var(--bubble-other);
+        }
+
+        .msg-bubble.private {
+            background: var(--pm-bg) !important;
+            border: 1px solid var(--pm-border);
+        }
+
+        .msg-sender {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .msg-pm-label {
+            font-size: 11px;
+            color: #b39ddb;
+            margin-bottom: 2px;
+        }
+
+        .msg-text { font-size: 15px; line-height: 1.45; }
+
+        .msg-time {
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            text-align: right;
+            margin-top: 3px;
+        }
+
+        .msg-system {
+            font-size: 13px;
+            color: var(--muted);
+            font-style: italic;
+            background: rgba(255,255,255,0.04);
+            padding: 6px 16px;
+            border-radius: 12px;
+        }
+
+        /* ── Typing ── */
+        .typing-bar {
+            padding: 2px 24px;
+            font-size: 12px;
+            color: var(--muted);
+            font-style: italic;
+            min-height: 22px;
+        }
+
+        /* ── Ввод ── */
+        .input-bar {
+            padding: 10px 16px;
+            background: var(--sidebar);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .emoji-btn {
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+
+        .emoji-btn:hover { background: var(--hover); }
+
+        .msg-input {
+            flex: 1;
+            padding: 12px 18px;
+            background: var(--input-bg);
+            border: none;
+            border-radius: 22px;
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+        }
+
+        .msg-input::placeholder { color: var(--muted); }
+
+        .send-btn {
+            width: 42px; height: 42px;
+            background: var(--accent);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .send-btn:hover { background: #6a9fd8; }
+        .send-btn:active { transform: scale(0.92); }
+
+        /* ── Emoji picker ── */
+        .emoji-picker {
+            display: none;
+            position: absolute;
+            bottom: 70px;
+            left: 16px;
+            background: var(--header);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            z-index: 100;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        }
+
+        .emoji-picker.show { display: block; }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+        }
+
+        .emoji-grid button {
+            background: transparent;
+            border: none;
+            font-size: 22px;
+            padding: 6px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.1s;
+        }
+
+        .emoji-grid button:hover { background: var(--hover); }
+
+        /* ── Адаптив ── */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════ ЭКРАН ВХОДА ═══════════════ -->
+<div id="login-screen">
+    <div class="login-card">
+        <div class="login-logo">💬</div>
+        <div class="login-title">MessageBox</div>
+        <div class="login-subtitle">Безопасный обмен сообщениями</div>
+
+        <input id="inp-server" class="login-input" placeholder="Адрес сервера"
+               value="localhost">
+        <input id="inp-port" class="login-input" placeholder="Порт WebSocket"
+               value="8887">
+        <input id="inp-username" class="login-input" placeholder="Ваше имя"
+               maxlength="20" autofocus>
+        <button id="btn-connect" class="login-btn">Подключиться</button>
+        <div id="login-error" class="login-error"></div>
+        <div class="login-version">v1.0 • Socket Chat</div>
+    </div>
+</div>
+
+<!-- ═══════════════ ЭКРАН ЧАТА ═══════════════ -->
+<div id="chat-screen">
+    <div class="chat-layout">
+
+        <!-- Боковая панель -->
+        <div class="sidebar">
+            <div class="sidebar-header">💬 MessageBox</div>
+            <div class="online-bar">
+                <div class="online-dot"></div>
+                <span id="online-count">0 участников</span>
+            </div>
+            <div id="user-list" class="user-list"></div>
+            <div class="my-profile">
+                <div id="my-avatar" class="user-avatar"></div>
+                <div class="my-profile-info">
+                    <div id="my-name" class="my-profile-name"></div>
+                    <div class="my-profile-status">В сети</div>
+                </div>
+                <button id="btn-exit" class="exit-btn" title="Выйти">✕</button>
+            </div>
+        </div>
+
+        <!-- Основной чат -->
+        <div class="chat-main">
+            <div class="chat-header">
+                <div>
+                    <div class="chat-header-title">Общий чат</div>
+                    <div id="connection-status" class="chat-header-status">
+                        ● Подключено
+                    </div>
+                </div>
+            </div>
+
+            <div id="messages" class="messages-area"></div>
+
+            <div id="typing-bar" class="typing-bar"></div>
+
+            <div class="input-bar" style="position:relative;">
+                <div id="emoji-picker" class="emoji-picker"></div>
+                <button id="btn-emoji" class="emoji-btn">😊</button>
+                <input id="msg-input" class="msg-input"
+                       placeholder="Написать сообщение..." autocomplete="off">
+                <button id="btn-send" class="send-btn">➤</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ═══════════════════════════════════════════
+    //                ПЕРЕМЕННЫЕ
+    // ═══════════════════════════════════════════
+    let ws = null;
+    let username = '';
+    let typingUsers = {};
+    let lastTypingSent = 0;
+    let typingTimeout = null;
+
+    // DOM
+    const loginScreen   = document.getElementById('login-screen');
+    const chatScreen     = document.getElementById('chat-screen');
+    const inpServer      = document.getElementById('inp-server');
+    const inpPort        = document.getElementById('inp-port');
+    const inpUsername     = document.getElementById('inp-username');
+    const btnConnect     = document.getElementById('btn-connect');
+    const loginError     = document.getElementById('login-error');
+    const messagesDiv    = document.getElementById('messages');
+    const msgInput       = document.getElementById('msg-input');
+    const btnSend        = document.getElementById('btn-send');
+    const btnEmoji       = document.getElementById('btn-emoji');
+    const emojiPicker    = document.getElementById('emoji-picker');
+    const userListDiv    = document.getElementById('user-list');
+    const onlineCount    = document.getElementById('online-count');
+    const typingBar      = document.getElementById('typing-bar');
+    const connStatus     = document.getElementById('connection-status');
+    const btnExit        = document.getElementById('btn-exit');
+    const myAvatar       = document.getElementById('my-avatar');
+    const myName         = document.getElementById('my-name');
+
+    // Цвета для аватаров
+    const COLORS = [
+        '#e57373','#f06292','#ba68c8','#9575cd','#7986cb',
+        '#64b5f6','#4fc3f7','#4dd0e1','#4db6ac','#81c784',
+        '#aed581','#fff176','#ffd54f','#ffb74d','#ff8a65'
+    ];
+
+    function colorFor(name) {
+        let hash = 0;
+        for (let i = 0; i < name.length; i++)
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        return COLORS[Math.abs(hash) % COLORS.length];
+    }
+
+    function initials(name) {
+        return name.charAt(0).toUpperCase();
+    }
+
+    function formatTime(ts) {
+        const d = new Date(ts);
+        return d.getHours().toString().padStart(2,'0') + ':' +
+               d.getMinutes().toString().padStart(2,'0');
+    }
+
+    function plural(n) {
+        const r = n % 100, d = n % 10;
+        if (r >= 11 && r <= 19) return 'участников';
+        if (d === 1) return 'участник';
+        if (d >= 2 && d <= 4) return 'участника';
+        return 'участников';
+    }
+
+    // ═══════════════════════════════════════════
+    //                ПОДКЛЮЧЕНИЕ
+    // ═══════════════════════════════════════════
+
+    btnConnect.addEventListener('click', doConnect);
+    inpUsername.addEventListener('keydown', e => {
+        if (e.key === 'Enter') doConnect();
+    });
+
+    function doConnect() {
+        const server = inpServer.value.trim();
+        const port   = inpPort.value.trim();
+        const name   = inpUsername.value.trim();
+
+        if (!server || !port || !name) {
+            loginError.textContent = 'Заполните все поля';
+            return;
+        }
+
+        loginError.textContent = '';
+        btnConnect.disabled = true;
+        btnConnect.textContent = 'Подключение...';
+
+        try {
+            ws = new WebSocket(`ws://${server}:${port}`);
+        } catch (e) {
+            loginError.textContent = 'Ошибка: ' + e.message;
+            btnConnect.disabled = false;
+            btnConnect.textContent = 'Подключиться';
+            return;
+        }
+
+        ws.onopen = () => {
+            username = name;
+            ws.send(JSON.stringify({
+                type: 'CONNECT',
+                sender: name,
+                content: '',
+                timestamp: Date.now()
+            }));
+        };
+
+        ws.onmessage = e => {
+            const msg = JSON.parse(e.data);
+
+            // Ещё на экране логина — ждём ACK
+            if (chatScreen.style.display !== 'flex') {
+                if (msg.type === 'CONNECT_ACK') {
+                    loginScreen.style.display = 'none';
+                    chatScreen.style.display  = 'flex';
+                    myName.textContent = username;
+                    myAvatar.textContent = initials(username);
+                    myAvatar.style.background = colorFor(username);
+                    msgInput.focus();
+                    addSystemMessage('Добро пожаловать в MessageBox! 🎉');
+                    document.title = 'MessageBox — ' + username;
+                } else if (msg.type === 'CONNECT_REJECT') {
+                    loginError.textContent = msg.content;
+                    btnConnect.disabled = false;
+                    btnConnect.textContent = 'Подключиться';
+                    ws.close();
+                }
+                return;
+            }
+
+            handleMessage(msg);
+        };
+
+        ws.onerror = () => {
+            loginError.textContent = 'Не удалось подключиться к серверу';
+            btnConnect.disabled = false;
+            btnConnect.textContent = 'Подключиться';
+        };
+
+        ws.onclose = () => {
+            if (chatScreen.style.display === 'flex') {
+                connStatus.textContent = '● Отключено';
+                connStatus.style.color = 'var(--red)';
+                addSystemMessage('⚠ Соединение с сервером потеряно');
+            } else {
+                btnConnect.disabled = false;
+                btnConnect.textContent = 'Подключиться';
+            }
+        };
+    }
+
+    // ═══════════════════════════════════════════
+    //             ОБРАБОТКА СООБЩЕНИЙ
+    // ═══════════════════════════════════════════
+
+    function handleMessage(msg) {
+        switch (msg.type) {
+            case 'CHAT_MESSAGE':    addChatMessage(msg, false); break;
+            case 'PRIVATE_MESSAGE': addChatMessage(msg, true);  break;
+            case 'SERVER_MESSAGE':  addSystemMessage(msg.content); break;
+            case 'USER_LIST':       updateUserList(msg.content); break;
+            case 'TYPING':          showTyping(msg.sender); break;
+        }
+    }
+
+    function addChatMessage(msg, isPrivate) {
+        const mine = msg.sender === username;
+        const row = document.createElement('div');
+        row.className = `msg-row ${mine ? 'mine' : 'theirs'}`;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble' + (isPrivate ? ' private' : '');
+
+        let html = '';
+
+        if (isPrivate) {
+            const label = mine
+                ? `🔒 Личное → ${msg.recipient}`
+                : `🔒 Личное от ${msg.sender}`;
+            html += `<div class="msg-pm-label">${label}</div>`;
+        }
+
+        if (!mine) {
+            html += `<div class="msg-sender" style="color:${colorFor(msg.sender)}">${esc(msg.sender)}</div>`;
+        }
+
+        html += `<div class="msg-text">${esc(msg.content)}</div>`;
+        html += `<div class="msg-time">${formatTime(msg.timestamp)}</div>`;
+
+        bubble.innerHTML = html;
+        row.appendChild(bubble);
+        messagesDiv.appendChild(row);
+        scrollBottom();
+    }
+
+    function addSystemMessage(text) {
+        const row = document.createElement('div');
+        row.className = 'msg-row system';
+        row.innerHTML = `<div class="msg-system">${esc(text)}</div>`;
+        messagesDiv.appendChild(row);
+        scrollBottom();
+    }
+
+    function scrollBottom() {
+        requestAnimationFrame(() => {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+    }
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    // ═══════════════════════════════════════════
+    //              СПИСОК ЮЗЕРОВ
+    // ═══════════════════════════════════════════
+
+    function updateUserList(csv) {
+        userListDiv.innerHTML = '';
+        if (!csv) { onlineCount.textContent = '0 участников'; return; }
+
+        const users = csv.split(',').filter(u => u.trim());
+        onlineCount.textContent = users.length + ' ' + plural(users.length);
+
+        users.forEach(user => {
+            user = user.trim();
+            const isMe = user === username;
+            const item = document.createElement('div');
+            item.className = 'user-item' + (isMe ? ' me' : '');
+
+            item.innerHTML = `
+                <div class="user-avatar" style="background:${colorFor(user)}">
+                    ${initials(user)}
+                </div>
+                <div class="user-name ${isMe ? 'user-name-me' : ''}">
+                    ${esc(user)}${isMe ? ' (Вы)' : ''}
+                </div>`;
+
+            if (!isMe) {
+                item.addEventListener('click', () => {
+                    msgInput.value = `/pm ${user} `;
+                    msgInput.focus();
+                });
+            }
+
+            userListDiv.appendChild(item);
+        });
+    }
+
+    // ═══════════════════════════════════════════
+    //               ОТПРАВКА
+    // ═══════════════════════════════════════════
+
+    btnSend.addEventListener('click', sendMessage);
+    msgInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    function sendMessage() {
+        const text = msgInput.value.trim();
+        if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+        // Личное сообщение?
+        if (text.startsWith('/pm ')) {
+            const parts = text.substring(4).split(' ');
+            const recipient = parts.shift();
+            const content = parts.join(' ');
+            if (recipient && content) {
+                ws.send(JSON.stringify({
+                    type: 'PRIVATE_MESSAGE',
+                    sender: username,
+                    content: content,
+                    recipient: recipient,
+                    timestamp: Date.now()
+                }));
+            }
+        } else {
+            ws.send(JSON.stringify({
+                type: 'CHAT_MESSAGE',
+                sender: username,
+                content: text,
+                timestamp: Date.now()
+            }));
+        }
+
+        msgInput.value = '';
+        msgInput.focus();
+    }
+
+    // ═══════════════════════════════════════════
+    //               TYPING
+    // ═══════════════════════════════════════════
+
+    msgInput.addEventListener('input', () => {
+        const now = Date.now();
+        if (now - lastTypingSent > 2000 && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'TYPING',
+                sender: username,
+                content: '',
+                timestamp: now
+            }));
+            lastTypingSent = now;
+        }
+    });
+
+    function showTyping(who) {
+        typingUsers[who] = Date.now();
+        updateTypingBar();
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            const now = Date.now();
+            for (const u in typingUsers) {
+                if (now - typingUsers[u] > 3000) delete typingUsers[u];
+            }
+            updateTypingBar();
+        }, 3000);
+    }
+
+    function updateTypingBar() {
+        const names = Object.keys(typingUsers);
+        if (names.length === 0) typingBar.textContent = '';
+        else if (names.length === 1) typingBar.textContent = names[0] + ' печатает...';
+        else typingBar.textContent = names.length + ' чел. печатают...';
+    }
+
+    // ═══════════════════════════════════════════
+    //               ЭМОДЗИ
+    // ═══════════════════════════════════════════
+
+    const EMOJIS = [
+        '😀','😂','😍','🤔','😎','😊','🥰','😏','😢','😡',
+        '🥳','😇','😱','😴','🤗','🤩','😤','🤯','🥺','😈',
+        '👍','👎','👋','🤝','🙏','💪','👏','🫡','✌️','🤟',
+        '❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','💕',
+        '🔥','⭐','✨','💯','✅','❌','⚡','💎','🎉','🎊',
+        '🍕','🍔','🍟','☕','🍺','🎸','🎮','📱','💻','🚀'
+    ];
+
+    // Создаём сетку эмодзи
+    const emojiGrid = document.createElement('div');
+    emojiGrid.className = 'emoji-grid';
+    EMOJIS.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.textContent = emoji;
+        btn.addEventListener('click', () => {
+            msgInput.value += emoji;
+            emojiPicker.classList.remove('show');
+            msgInput.focus();
+        });
+        emojiGrid.appendChild(btn);
+    });
+    emojiPicker.appendChild(emojiGrid);
+
+    btnEmoji.addEventListener('click', e => {
+        e.stopPropagation();
+        emojiPicker.classList.toggle('show');
+    });
+
+    document.addEventListener('click', e => {
+        if (!emojiPicker.contains(e.target) && e.target !== btnEmoji) {
+            emojiPicker.classList.remove('show');
+        }
+    });
+
+    // ═══════════════════════════════════════════
+    //               ВЫХОД
+    // ═══════════════════════════════════════════
+
+    btnExit.addEventListener('click', () => {
+        if (ws) ws.close();
+        chatScreen.style.display  = 'none';
+        loginScreen.style.display = 'flex';
+        messagesDiv.innerHTML = '';
+        userListDiv.innerHTML = '';
+        btnConnect.disabled = false;
+        btnConnect.textContent = 'Подключиться';
+        connStatus.textContent = '● Подключено';
+        connStatus.style.color = 'var(--green)';
+        document.title = 'MessageBox';
+    });
+</script>
+</body>
+</html>
