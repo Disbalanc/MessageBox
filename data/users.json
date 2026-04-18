@@ -1,0 +1,17 @@
+{
+  "михал": {
+    "username": "Михал",
+    "passwordHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+    "createdAt": 1776537226440
+  },
+  "михаил": {
+    "username": "Михаил",
+    "passwordHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+    "createdAt": 1776537313350
+  },
+  "олег": {
+    "username": "Олег",
+    "passwordHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+    "createdAt": 1776537259197
+  }
+}

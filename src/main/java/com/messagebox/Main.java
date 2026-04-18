@@ -1,8 +1,9 @@
 package com.messagebox;
 
+import com.messagebox.server.ChatWebSocketServer;
+import com.messagebox.server.DataStore;
 import com.sun.net.httpserver.HttpServer;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
@@ -14,24 +15,23 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        System.out.println("╔════════════════════════════════════╗");
-        System.out.println("║        MessageBox Server           ║");
-        System.out.println("╠════════════════════════════════════╣");
-        System.out.println("║  HTTP:      http://localhost:" + HTTP_PORT + "  ║");
-        System.out.println("║  WebSocket: ws://localhost:" + WS_PORT + "    ║");
-        System.out.println("╚════════════════════════════════════╝");
-        System.out.println();
+        System.out.println("╔════════════════════════════════════════╗");
+        System.out.println("║        MessageBox Server v2.0          ║");
+        System.out.println("╠════════════════════════════════════════╣");
+        System.out.println("║  HTTP:      http://localhost:" + HTTP_PORT + "      ║");
+        System.out.println("║  WebSocket: ws://localhost:" + WS_PORT + "        ║");
+        System.out.println("╚════════════════════════════════════════╝");
 
-        // 1. Запускаем WebSocket-сервер
-        ChatWebSocketServer wsServer = new ChatWebSocketServer(WS_PORT);
+        DataStore store = new DataStore();
+
+        ChatWebSocketServer wsServer = new ChatWebSocketServer(WS_PORT, store);
         wsServer.start();
-        System.out.println("[OK] WebSocket-сервер запущен");
+        System.out.println("[OK] WebSocket-сервер");
 
-        // 2. Запускаем HTTP-сервер (раздаёт index.html)
-        HttpServer httpServer = HttpServer.create(new InetSocketAddress(HTTP_PORT), 0);
+        HttpServer httpServer = HttpServer.create(
+                new InetSocketAddress(HTTP_PORT), 0);
 
         httpServer.createContext("/", exchange -> {
-            // Читаем index.html из ресурсов
             try (InputStream is = Main.class.getResourceAsStream("/index.html")) {
                 if (is == null) {
                     String err = "index.html not found";
@@ -41,7 +41,6 @@ public class Main {
                     }
                     return;
                 }
-
                 byte[] html = is.readAllBytes();
                 exchange.getResponseHeaders().set("Content-Type",
                         "text/html; charset=UTF-8");
@@ -54,10 +53,8 @@ public class Main {
 
         httpServer.setExecutor(null);
         httpServer.start();
-        System.out.println("[OK] HTTP-сервер запущен");
+        System.out.println("[OK] HTTP-сервер");
         System.out.println();
-        System.out.println(">>> Откройте в браузере: http://localhost:" + HTTP_PORT);
-        System.out.println(">>> Для второго клиента — откройте ещё одну вкладку");
-        System.out.println();
+        System.out.println(">>> http://localhost:" + HTTP_PORT);
     }
 }
